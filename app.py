@@ -8,8 +8,59 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+PROGRAMS = [
+    "Fat Loss (FL)",
+    "Muscle Gain (MG)",
+    "Beginner (BG)",
+]
+
+PROGRAMS_JSON = {
+    "Fat Loss (FL)": {"factor": 22, "desc": "3-day full-body fat loss"},
+    "Muscle Gain (MG)": {"factor": 35, "desc": "Push/Pull/Legs hypertrophy"},
+    "Beginner (BG)": {"factor": 26, "desc": "Beginner full-body"},
+}
+
 @app.route("/")
 def health():
     return jsonify({"status": "ok", "service": "ACEest API v1"})
+
+@app.route("/programs", methods=["GET"])
+def list_programs():
+    return jsonify(PROGRAMS)
+
+@app.route("/clients", methods=["POST"])
+def create_client():
+    data = request.get_json()
+    name = data.get("name")
+    age = data.get("age")
+    weight = data.get("weight")
+    program = data.get("program")
+
+    if not name or not program or weight is None:
+        return jsonify({"error": "name, weight, program required"}), 400
+
+    if program not in PROGRAMS:
+        return jsonify({"error": "invalid program"}), 400
+
+    calories = int(weight * PROGRAMS[program]["factor"])
+
+    payload = {
+        "name": name,
+        "age": age,
+        "weight": weight,
+        "program": program,
+        "calories": calories,
+    }
+
+    res = supabase.table("clients").insert(payload).execute()
+    return jsonify({"client": payload, "supabase_result": res.model_dump()}), 201
+
+@app.route("/clients/<name>", methods=["GET"])
+def get_client(name):
+    res = supabase.table("clients").select("*").eq("name", name).execute()
+    if not res.data:
+        return jsonify({"error": "not found"}), 404
+    return jsonify(res.data[0])
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
