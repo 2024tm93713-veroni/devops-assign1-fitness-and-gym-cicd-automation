@@ -9,16 +9,10 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-PROGRAMS = [
-    "Fat Loss (FL)",
-    "Muscle Gain (MG)",
-    "Beginner (BG)",
-]
-
 PROGRAMS_JSON = {
-    "Fat Loss (FL)": {"factor": 22, "desc": "3-day full-body fat loss"},
-    "Muscle Gain (MG)": {"factor": 35, "desc": "Push/Pull/Legs hypertrophy"},
-    "Beginner (BG)": {"factor": 26, "desc": "Beginner full-body"},
+    "Fat Loss (FL)": {"factor": 22, "desc": "3-day full-body fat loss", "name": "Fat Loss"},
+    "Muscle Gain (MG)": {"factor": 35, "desc": "Push/Pull/Legs hypertrophy", "name": "Muscle Gain"},
+    "Beginner (BG)": {"factor": 26, "desc": "Beginner full-body", "name":"Beginner"},
 }
 
 @app.route("/")
@@ -27,7 +21,7 @@ def health():
 
 @app.route("/programs", methods=["GET"])
 def list_programs():
-    return jsonify(PROGRAMS)
+    return jsonify(PROGRAMS_JSON)
 
 @app.route("/clients", methods=["POST"])
 def create_client():
@@ -40,16 +34,16 @@ def create_client():
     if not name or not program or weight is None:
         return jsonify({"error": "name, weight, program required"}), 400
 
-    if program not in PROGRAMS:
+    if program not in PROGRAMS_JSON:
         return jsonify({"error": "invalid program"}), 400
 
-    calories = int(weight * PROGRAMS[program]["factor"])
+    calories = int(weight * PROGRAMS_JSON[program]["factor"])
 
     payload = {
         "name": name,
         "age": age,
         "weight": weight,
-        "program": program,
+        "program": PROGRAMS_JSON[program]["name"],
         "calories": calories,
     }
 
@@ -79,6 +73,23 @@ def add_progress(name):
 def list_progress(name):
     res = supabase.table("progress").select("*").eq("client_name", name).order("id").execute()
     return jsonify(res.data)
+
+@app.route("/calculate_calories", methods=["POST"])
+def calculate_calories():
+    data = request.get_json(force=True)
+    weight = data.get("weight")
+    code = data.get("program_code")
+
+    if weight is None or code not in PROGRAMS_JSON:
+        return jsonify({"error": "weight and valid program_code required"}), 400
+
+    factor = PROGRAMS_JSON[code]["factor"]
+    calories = int(weight * factor)
+    return jsonify({
+        "program": PROGRAMS_JSON[code]["name"],
+        "weight": weight,
+        "calories": calories
+    }), 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
