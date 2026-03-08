@@ -1,63 +1,78 @@
 pipeline {
     agent any
-    
+
     parameters {
-        string(name: 'VERSION', defaultValue: 'latest', description: 'Git tag to build')
+        string(name: 'VERSION', defaultValue: 'latest', description: 'ACEest API version')
     }
-    
-    // ⚠️ NEVER hardcode creds here! Use Jenkins Credentials
+
     environment {
-        SUPABASE_URL = credentials('supabase-url')      // Jenkins credential ID
-        SUPABASE_KEY = credentials('supabase-key')      // Jenkins credential ID
+        DOCKER_IMAGE = "aceest-api-local"
+        TAG = "${params.VERSION}"
     }
-    
+
     stages {
-        stage('Checkout Version') {
+        stage('Checkout') {
             steps {
-                script {
-                    checkout scm
-                    if (params.VERSION != 'latest') {
-                        git branch: 'main', tag: params.VERSION
-                        echo "✓ Checked out ${params.VERSION}"
-                    }
-                }
+                checkout scm
             }
         }
-        
-        stage('Lint & Test') {
+
+        stage('Python Tests') {
             steps {
                 sh '''
-                pip install --upgrade pip
-                pip install -r requirements.txt .
-                pytest -v
+                python -m venv venv
+                . venv/bin/activate
+                pip install -r requirements.txt pytest
+                pytest
                 '''
             }
         }
-        
-        stage('Build Docker') {
-            steps {
-                sh "docker build -t aceest-app:${params.VERSION} ."
-                echo "✓ Docker image: aceest-app:${params.VERSION}"
-            }
-        }
-        
-        stage('Quality Gate') {
+
+        stage('Docker Build') {
             steps {
                 sh '''
-                docker run --rm \
-                  -e SUPABASE_URL="$SUPABASE_URL" \
-                  -e SUPABASE_KEY="$SUPABASE_KEY" \
-                  aceest-app:${VERSION} \
-                  curl -f http://localhost:5000/ || exit 1
+                # Pick version based on VERSION param
+                if [ "$VERSION" = "v1.0.0" ]; then
+                    cp app_v1.py app.py
+                elif [ "$VERSION" = "v2.0.0" ]; then
+                    cp app_v2.py app.py
+                else
+                    cp app_v3.py app.py
+                fi
+                
+                docker build -t $DOCKER_IMAGE:$TAG .
                 '''
-                echo "✅ Quality gate passed!"
+            }
+        }
+
+        stage('Docker Test') {
+            steps {
+                sh '''
+                docker run -d --name aceest-test -p 5000:5000 $DOCKER_IMAGE:$TAG
+                sleep 10
+                curl -f http://localhost:5000/health || (echo "Health check failed" && exit 1)
+                docker rm -f aceest-test
+                echo "✓ Docker test passed for $TAG"
+                '''
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                sh '''
+                # Stop any old containers
+                docker rm -f aceest-prod || true
+                # Run production
+                docker run -d --name aceest-prod -p 8080:5000 $DOCKER_IMAGE:$TAG
+                echo "✓ Deployed $TAG to http://localhost:8080"
+                '''
             }
         }
     }
-    
+
     post {
         always {
-            echo "Build complete: aceest-app:${params.VERSION}"
+            sh 'docker ps -a'
         }
     }
 }
