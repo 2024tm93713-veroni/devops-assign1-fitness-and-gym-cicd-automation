@@ -1,0 +1,5 @@
+flask
+supabase-py
+gunicorn
+python-dotenv
+psycopg2
