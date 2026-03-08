@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from supabase import create_client, Client
+from datetime import datetime
 import os
 
 app = Flask(__name__)
@@ -61,6 +62,23 @@ def get_client(name):
     if not res.data:
         return jsonify({"error": "not found"}), 404
     return jsonify(res.data[0])
+
+@app.route("/clients/<name>/progress", methods=["POST"])
+def add_progress(name):
+    data = request.get_json()
+    adherence = data.get("adherence")
+    if adherence is None:
+        return jsonify({"error": "adherence required"}), 400
+
+    week = datetime.utcnow().strftime("Week %U - %Y")
+    payload = {"client_name": name, "week": week, "adherence": adherence}
+    res = supabase.table("progress").insert(payload).execute()
+    return jsonify({"progress": payload, "supabase_result": res.model_dump()}), 201
+
+@app.route("/clients/<name>/progress", methods=["GET"])
+def list_progress(name):
+    res = supabase.table("progress").select("*").eq("client_name", name).order("id").execute()
+    return jsonify(res.data)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
