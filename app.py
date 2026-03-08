@@ -10,8 +10,6 @@ app = Flask(__name__)
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
 
 PROGRAMS_JSON = {
     "Fat Loss (FL)": {
@@ -30,6 +28,12 @@ PROGRAMS_JSON = {
         "name": "Beginner"
     }
 }
+
+def get_supabase():
+    """Lazy init Supabase client."""
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise ValueError("SUPABASE_URL and SUPABASE_KEY required")
+    return create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 @app.route("/")
@@ -69,6 +73,7 @@ def create_client():
         "calories": calories
     }
 
+    supabase = get_supabase()
     res = supabase.table("clients").insert(payload).execute()
     return jsonify({
         "client": payload,
@@ -79,6 +84,7 @@ def create_client():
 @app.route("/clients/<name>", methods=["GET"])
 def get_client(name):
     """Get client by name."""
+    supabase = get_supabase()
     res = supabase.table("clients").select("*").eq("name", name).execute()
     if not res.data:
         return jsonify({"error": "not found"}), 404
@@ -99,6 +105,7 @@ def add_progress(name):
         "week": week,
         "adherence": adherence
     }
+    supabase = get_supabase()
     res = supabase.table("progress").insert(payload).execute()
     return jsonify({
         "progress": payload,
@@ -109,6 +116,7 @@ def add_progress(name):
 @app.route("/clients/<name>/progress", methods=["GET"])
 def list_progress(name):
     """List client progress."""
+    supabase = get_supabase()
     res = supabase.table("progress") \
         .select("*") \
         .eq("client_name", name) \
