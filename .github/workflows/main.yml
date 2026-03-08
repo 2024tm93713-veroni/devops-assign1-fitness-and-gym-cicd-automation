@@ -1,0 +1,36 @@
+name: ACEest CI/CD → Local Jenkins
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: python-version: '3.11'
+      - run: |
+          pip install -r requirements.txt pytest flake8
+          flake8 . && pytest
+      - run: docker build -t aceest-app:${{ github.sha }} .
+
+  trigger-local-jenkins:
+    if: github.ref_type == 'tag'  # Only on v1.0.0, v2.0.0 etc
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Local Jenkins
+        env:
+          JENKINS_URL: ${{ secrets.JENKINS_URL }}
+          JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
+          VERSION: ${{ github.ref_name }}  # v2.0.0
+        run: |
+          echo "Triggering Jenkins: $JENKINS_URL"
+          curl -X POST "$JENKINS_URL/job/ACEest-Build/buildWithParameters?VERSION=$VERSION" \
+            --user "token:$JENKINS_TOKEN" \
+            -d "VERSION=$VERSION"
