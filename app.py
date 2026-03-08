@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from supabase import create_client, Client
+from supabase import create_client
 from datetime import datetime
 import os
 from dotenv import load_dotenv
@@ -29,6 +29,7 @@ PROGRAMS_JSON = {
     }
 }
 
+
 def get_supabase():
     """Lazy init Supabase client."""
     if not SUPABASE_URL or not SUPABASE_KEY:
@@ -49,7 +50,7 @@ def list_programs():
 
 
 @app.route("/clients", methods=["POST"])
-def create_client():
+def create_gym_client():
     """Create new client."""
     data = request.get_json()
     name = data.get("name")
