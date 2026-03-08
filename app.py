@@ -21,7 +21,7 @@ PROGRAMS_JSON = {
     },
     "Muscle Gain (MG)": {
         "factor": 35,
-        "desc": "Push/Pull/Legs hypertrophy", 
+        "desc": "Push/Pull/Legs hypertrophy",
         "name": "Muscle Gain"
     },
     "Beginner (BG)": {
