@@ -203,6 +203,58 @@ def list_progress(name):
     return jsonify(res.data)
 
 
+@app.route("/clients/<name>/measurement", methods=["POST"])
+def add_measurement(name):
+    """Add client measurement tracking."""
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid JSON body"}), 400
+
+    # Check if client exists
+    supabase = get_supabase()
+    client_res = supabase.table("clients").select(
+        "*"
+    ).eq("name", name).execute()
+
+    if not client_res.data:
+        return jsonify({"error": "client not found"}), 404
+
+    # Validate measurement fields
+    waist = data.get("waist")
+    chest = data.get("chest")
+    arms = data.get("arms")
+    legs = data.get("legs")
+
+    # At least one measurement required
+    if all(v is None for v in [waist, chest, arms, legs]):
+        return jsonify({
+            "error": "At least one measurement required"
+        }), 400
+
+    # Validate measurements are numbers
+    for val in [waist, chest, arms, legs]:
+        if val is not None and not isinstance(val, (int, float)):
+            return jsonify({
+                "error": "All measurements must be numbers"
+            }), 400
+
+    measurement_date = datetime.utcnow().isoformat()
+    payload = {
+        "client_name": name,
+        "waist": waist,
+        "chest": chest,
+        "arms": arms,
+        "legs": legs,
+        "measurement_date": measurement_date
+    }
+
+    res = supabase.table("measurements").insert(payload).execute()
+    return jsonify({
+        "measurement": payload,
+        "supabase_result": res.model_dump()
+    }), 201
+
+
 @app.route("/clients/bmi-groups", methods=["GET"])
 def get_bmi_groups():
     """Group all clients by BMI category."""
