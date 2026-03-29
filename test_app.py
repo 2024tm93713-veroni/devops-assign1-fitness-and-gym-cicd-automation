@@ -343,4 +343,3 @@ def test_list_clients_default_pagination(mock_supabase):
     assert "total_count" in data
     assert "total_pages" in data
     assert "data" in data
-
