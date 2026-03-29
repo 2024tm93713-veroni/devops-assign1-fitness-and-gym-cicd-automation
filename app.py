@@ -160,7 +160,7 @@ def delete_client(name):
         return jsonify({"error": "client not found"}), 404
 
     # Delete the client
-    res = supabase.table("clients").delete().eq("name", name).execute()
+    supabase.table("clients").delete().eq("name", name).execute()
     return jsonify({
         "message": f"Client '{name}' deleted successfully",
         "deleted_count": len(check_res.data)
