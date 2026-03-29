@@ -28,10 +28,20 @@ jobs:
       - name: Trigger Local Jenkins
         env:
           JENKINS_URL: ${{ secrets.JENKINS_URL }}
+          JENKINS_USER: ${{ secrets.JENKINS_USER }}
           JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
           VERSION: ${{ github.ref_name }}
         run: |
-          echo "Triggering Jenkins: $JENKINS_URL"
+          echo "Getting Jenkins crumb..."
+
+          CRUMB=$(curl -s \
+            --user "$JENKINS_USER:$JENKINS_TOKEN" \
+            "$JENKINS_URL/crumbIssuer/api/json" \
+            | python -c "import sys, json; print(json.load(sys.stdin)['crumb'])")
+
+          echo "Triggering Jenkins build..."
+
           curl -X POST \
             "$JENKINS_URL/job/ACEest-Build/buildWithParameters?VERSION=$VERSION" \
-            --user "your-jenkins-username:$JENKINS_TOKEN"
+            --user "$JENKINS_USER:$JENKINS_TOKEN" \
+            -H "Jenkins-Crumb:$CRUMB"
