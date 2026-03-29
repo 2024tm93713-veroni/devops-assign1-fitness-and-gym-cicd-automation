@@ -53,6 +53,8 @@ def list_programs():
 def create_gym_client():
     """Create new client."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid JSON body"}), 400
     name = data.get("name")
     age = data.get("age")
     weight = data.get("weight")
@@ -63,6 +65,12 @@ def create_gym_client():
 
     if program not in PROGRAMS_JSON:
         return jsonify({"error": "invalid program"}), 400
+
+    if not isinstance(weight, (int, float)):
+        return jsonify({"error": "weight must be number"}), 400
+
+    if age is not None and not isinstance(age, int):
+        return jsonify({"error": "age must be integer"}), 400
 
     calories = int(weight * PROGRAMS_JSON[program]["factor"])
 
@@ -96,6 +104,8 @@ def get_client(name):
 def add_progress(name):
     """Add weekly progress."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid JSON body"}), 400
     adherence = data.get("adherence")
     if adherence is None:
         return jsonify({"error": "adherence required"}), 400
@@ -130,6 +140,8 @@ def list_progress(name):
 def calculate_calories():
     """Calculate calories for program."""
     data = request.get_json(force=True)
+    if not data:
+        return jsonify({"error": "Invalid JSON body"}), 400
     weight = data.get("weight")
     code = data.get("program_code")
 
