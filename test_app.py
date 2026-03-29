@@ -112,19 +112,20 @@ def test_bmi_groups_empty(mock_supabase):
     """Test BMI groups endpoint with no clients."""
     mock_response = MagicMock()
     mock_response.data = []
-    mock_supabase.return_value.table.return_value.select.return_value.execute.return_value = mock_response
+    mock_execute = mock_supabase.return_value.table.return_value
+    mock_execute.select.return_value.execute.return_value = mock_response
 
     client = app.test_client()
     resp = client.get("/clients/bmi-groups")
     assert resp.status_code == 200
     data = resp.get_json()
-    
+
     assert "Underweight" in data
     assert "Normal" in data
     assert "Overweight" in data
     assert "Obese" in data
     assert "Unknown" in data
-    
+
     assert data["Underweight"] == []
     assert data["Normal"] == []
 
@@ -175,26 +176,27 @@ def test_bmi_groups_with_clients(mock_supabase):
             "calories": 0
         }
     ]
-    mock_supabase.return_value.table.return_value.select.return_value.execute.return_value = mock_response
+    mock_execute = mock_supabase.return_value.table.return_value
+    mock_execute.select.return_value.execute.return_value = mock_response
 
     client = app.test_client()
     resp = client.get("/clients/bmi-groups")
     assert resp.status_code == 200
     data = resp.get_json()
-    
+
     # Check that Normal category has John
     assert len(data["Normal"]) == 1
     assert data["Normal"][0]["name"] == "John"
     assert data["Normal"][0]["bmi"] == 21.6
-    
+
     # Check that Obese category has Jane
     assert len(data["Obese"]) == 1
     assert data["Obese"][0]["name"] == "Jane"
-    
+
     # Check that Underweight category has Bob
     assert len(data["Underweight"]) == 1
     assert data["Underweight"][0]["name"] == "Bob"
-    
+
     # Check that Unknown category has Alice
     assert len(data["Unknown"]) == 1
     assert data["Unknown"][0]["name"] == "Alice"

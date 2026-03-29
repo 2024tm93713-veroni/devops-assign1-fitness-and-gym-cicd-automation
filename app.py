@@ -169,7 +169,7 @@ def get_bmi_groups():
     """Group all clients by BMI category."""
     supabase = get_supabase()
     res = supabase.table("clients").select("*").execute()
-    
+
     if not res.data:
         return jsonify({
             "Underweight": [],
@@ -178,7 +178,7 @@ def get_bmi_groups():
             "Obese": [],
             "Unknown": []
         }), 200
-    
+
     # Group clients by BMI category
     grouped = {
         "Underweight": [],
@@ -187,7 +187,7 @@ def get_bmi_groups():
         "Obese": [],
         "Unknown": []
     }
-    
+
     for client in res.data:
         bmi = client.get("bmi")
         category = get_bmi_category(bmi)
@@ -201,7 +201,7 @@ def get_bmi_groups():
             "calories": client.get("calories")
         }
         grouped[category].append(client_info)
-    
+
     return jsonify(grouped), 200
 
 
