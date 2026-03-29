@@ -16,6 +16,7 @@ def test_programs():
     data = resp.get_json()
     assert "Fat Loss (FL)" in data
 
+
 def test_create_client_no_json():
     client = app.test_client()
     response = client.post("/clients", data="invalid")
