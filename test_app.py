@@ -266,3 +266,81 @@ def test_delete_client_invalid_name():
     resp = client.delete("/clients/")
     # This will 404 because Flask won't match the route without a name
     assert resp.status_code == 404
+
+
+@patch("app.get_supabase")
+def test_list_clients_custom_pagination(mock_supabase):
+    """Test list clients with custom pagination."""
+    mock_response = MagicMock()
+    mock_response.data = [
+        {"name": "John", "age": 30, "weight": 70}
+    ]
+
+    mock_table = mock_supabase.return_value.table.return_value
+    mock_table.select.return_value.execute.return_value = mock_response
+    mock_table.select.return_value.range = MagicMock(
+        return_value=mock_table.select.return_value
+    )
+
+    client = app.test_client()
+    resp = client.get("/clients?page=2&limit=5")
+    assert resp.status_code == 200
+    data = resp.get_json()
+
+    assert data["page"] == 2
+    assert data["limit"] == 5
+
+
+def test_list_clients_invalid_page():
+    """Test list clients with invalid page parameter."""
+    client = app.test_client()
+    resp = client.get("/clients?page=0")
+    assert resp.status_code == 400
+    data = resp.get_json()
+    assert "page and limit must be >= 1" in data["error"]
+
+
+def test_list_clients_invalid_limit():
+    """Test list clients with invalid limit parameter."""
+    client = app.test_client()
+    resp = client.get("/clients?limit=101")
+    assert resp.status_code == 400
+    data = resp.get_json()
+    assert "limit cannot exceed 100" in data["error"]
+
+
+@patch("app.get_supabase")
+def test_list_clients_default_pagination(mock_supabase):
+    """Test list clients with default pagination."""
+    mock_response = MagicMock()
+    mock_response.data = [
+        {
+            "name": "John",
+            "age": 30,
+            "weight": 70,
+            "program": "Muscle Gain"
+        },
+        {
+            "name": "Jane",
+            "age": 28,
+            "weight": 65,
+            "program": "Fat Loss"
+        }
+    ]
+
+    mock_table = mock_supabase.return_value.table.return_value
+    mock_table.select.return_value.execute.return_value = mock_response
+    mock_table.select.return_value.range = MagicMock(
+        return_value=mock_table.select.return_value
+    )
+
+    client = app.test_client()
+    resp = client.get("/clients")
+    assert resp.status_code == 200
+    data = resp.get_json()
+
+    assert data["page"] == 1
+    assert data["limit"] == 10
+    assert "total_count" in data
+    assert "total_pages" in data
+    assert "data" in data
