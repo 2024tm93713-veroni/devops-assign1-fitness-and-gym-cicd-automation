@@ -268,6 +268,7 @@ def test_delete_client_invalid_name():
     assert resp.status_code == 404
 
 
+@patch("app.get_supabase")
 def test_clients_by_program_name(mock_supabase):
     """Test get clients by program name."""
     mock_response = MagicMock()
@@ -301,6 +302,7 @@ def test_clients_by_program_name(mock_supabase):
     assert len(data["clients"]) == 2
 
 
+@patch("app.get_supabase")
 def test_clients_by_program_code(mock_supabase):
     """Test get clients by program code."""
     mock_response = MagicMock()
