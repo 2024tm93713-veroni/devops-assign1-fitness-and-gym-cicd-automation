@@ -37,6 +37,27 @@ def get_supabase():
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
+def calculate_bmi(weight, height):
+    """Calculate BMI. Weight in kg, height in meters."""
+    if height <= 0:
+        return None
+    return round(weight / (height ** 2), 2)
+
+
+def get_bmi_category(bmi):
+    """Get BMI category."""
+    if bmi is None:
+        return "Unknown"
+    elif bmi < 18.5:
+        return "Underweight"
+    elif bmi < 25:
+        return "Normal"
+    elif bmi < 30:
+        return "Overweight"
+    else:
+        return "Obese"
+
+
 @app.route("/")
 def health():
     """Health check endpoint."""
@@ -58,6 +79,7 @@ def create_gym_client():
     name = data.get("name")
     age = data.get("age")
     weight = data.get("weight")
+    height = data.get("height")
     program = data.get("program")
 
     if not name or not program or weight is None:
@@ -72,14 +94,20 @@ def create_gym_client():
     if age is not None and not isinstance(age, int):
         return jsonify({"error": "age must be integer"}), 400
 
+    if height is not None and not isinstance(height, (int, float)):
+        return jsonify({"error": "height must be number"}), 400
+
     calories = int(weight * PROGRAMS_JSON[program]["factor"])
+    bmi = calculate_bmi(weight, height) if height else None
 
     payload = {
         "name": name,
         "age": age,
         "weight": weight,
+        "height": height,
         "program": PROGRAMS_JSON[program]["name"],
-        "calories": calories
+        "calories": calories,
+        "bmi": bmi
     }
 
     supabase = get_supabase()
@@ -134,6 +162,47 @@ def list_progress(name):
         .order("id") \
         .execute()
     return jsonify(res.data)
+
+
+@app.route("/clients/bmi-groups", methods=["GET"])
+def get_bmi_groups():
+    """Group all clients by BMI category."""
+    supabase = get_supabase()
+    res = supabase.table("clients").select("*").execute()
+
+    if not res.data:
+        return jsonify({
+            "Underweight": [],
+            "Normal": [],
+            "Overweight": [],
+            "Obese": [],
+            "Unknown": []
+        }), 200
+
+    # Group clients by BMI category
+    grouped = {
+        "Underweight": [],
+        "Normal": [],
+        "Overweight": [],
+        "Obese": [],
+        "Unknown": []
+    }
+
+    for client in res.data:
+        bmi = client.get("bmi")
+        category = get_bmi_category(bmi)
+        client_info = {
+            "name": client.get("name"),
+            "age": client.get("age"),
+            "weight": client.get("weight"),
+            "height": client.get("height"),
+            "bmi": bmi,
+            "program": client.get("program"),
+            "calories": client.get("calories")
+        }
+        grouped[category].append(client_info)
+
+    return jsonify(grouped), 200
 
 
 @app.route("/calculate_calories", methods=["POST"])
