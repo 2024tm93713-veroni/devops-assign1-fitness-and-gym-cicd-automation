@@ -344,3 +344,93 @@ def test_list_clients_default_pagination(mock_supabase):
     assert "total_count" in data
     assert "total_pages" in data
     assert "data" in data
+
+
+@patch("app.get_supabase")
+def test_add_measurement_success(mock_supabase):
+    """Test successful measurement addition."""
+    mock_client_response = MagicMock()
+    mock_client_response.data = [
+        {"name": "John", "age": 30, "weight": 70}
+    ]
+
+    mock_measurement_response = MagicMock()
+    mock_measurement_response.model_dump.return_value = {
+        "client_name": "John"
+    }
+
+    mock_table = mock_supabase.return_value.table.return_value
+    select_chain = MagicMock()
+
+    # For client check
+    select_chain.eq.return_value.execute.return_value = (
+        mock_client_response
+    )
+    # For measurement insert
+    insert_chain = MagicMock()
+    insert_chain.execute.return_value = mock_measurement_response
+
+    mock_table.select.return_value = select_chain
+    mock_table.insert.return_value = insert_chain
+
+    client = app.test_client()
+    resp = client.post(
+        "/clients/John/measurement",
+        json={
+            "waist": 80.5,
+            "chest": 95.0,
+            "arms": 35.0,
+            "legs": 55.0
+        }
+    )
+    assert resp.status_code == 201
+    data = resp.get_json()
+
+    assert "measurement" in data
+    assert data["measurement"]["client_name"] == "John"
+    assert data["measurement"]["waist"] == 80.5
+
+
+@patch("app.get_supabase")
+def test_add_measurement_client_not_found(mock_supabase):
+    """Test measurement addition for non-existent client."""
+    mock_response = MagicMock()
+    mock_response.data = []
+
+    mock_table = mock_supabase.return_value.table.return_value
+    mock_table.select.return_value.eq.return_value.execute.return_value = (
+        mock_response
+    )
+
+    client = app.test_client()
+    resp = client.post(
+        "/clients/NonExistent/measurement",
+        json={"waist": 80.5, "chest": 95.0}
+    )
+    assert resp.status_code == 404
+    data = resp.get_json()
+    assert data["error"] == "client not found"
+
+
+def test_add_measurement_no_measurements():
+    """Test measurement addition without any measurements."""
+    client = app.test_client()
+    resp = client.post(
+        "/clients/John/measurement",
+        json={}
+    )
+    assert resp.status_code == 400
+    data = resp.get_json()
+    assert "At least one measurement required" in data["error"]
+
+
+def test_add_measurement_invalid_values():
+    """Test measurement addition with invalid values."""
+    client = app.test_client()
+    resp = client.post(
+        "/clients/John/measurement",
+        json={"waist": "not a number"}
+    )
+    assert resp.status_code == 400
+    data = resp.get_json()
+    assert "must be numbers" in data["error"]
