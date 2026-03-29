@@ -268,6 +268,7 @@ def test_delete_client_invalid_name():
     assert resp.status_code == 404
 
 
+@patch("app.get_supabase")
 def test_list_clients_custom_pagination(mock_supabase):
     """Test list clients with custom pagination."""
     mock_response = MagicMock()
