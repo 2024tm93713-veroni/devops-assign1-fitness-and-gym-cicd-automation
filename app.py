@@ -243,20 +243,11 @@ def list_progress(name):
 @app.route("/clients/<name>/measurement", methods=["POST"])
 def add_measurement(name):
     """Add client measurement tracking."""
-    data = request.get_json()
-    if not data:
-        return jsonify({"error": "Invalid JSON body"}), 400
+    data = request.get_json(silent=True)
+    if data is None:
+        data = {}
 
-    # Check if client exists
-    supabase = get_supabase()
-    client_res = supabase.table("clients").select(
-        "*"
-    ).eq("name", name).execute()
-
-    if not client_res.data:
-        return jsonify({"error": "client not found"}), 404
-
-    # Validate measurement fields
+    # Validate measurement fields BEFORE checking client existence
     waist = data.get("waist")
     chest = data.get("chest")
     arms = data.get("arms")
@@ -274,6 +265,15 @@ def add_measurement(name):
             return jsonify({
                 "error": "All measurements must be numbers"
             }), 400
+
+    # Check if client exists
+    supabase = get_supabase()
+    client_res = supabase.table("clients").select(
+        "*"
+    ).eq("name", name).execute()
+
+    if not client_res.data:
+        return jsonify({"error": "client not found"}), 404
 
     measurement_date = datetime.utcnow().isoformat()
     payload = {
