@@ -19,5 +19,9 @@ def test_programs():
 
 def test_create_client_no_json():
     client = app.test_client()
-    response = client.post("/clients", data="invalid")
+    response = client.post(
+        "/clients",
+        data="invalid",
+        content_type="application/json"
+    )
     assert response.status_code == 400
