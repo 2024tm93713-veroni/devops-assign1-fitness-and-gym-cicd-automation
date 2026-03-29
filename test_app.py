@@ -361,7 +361,6 @@ def test_add_measurement_success(mock_supabase):
 
     mock_table = mock_supabase.return_value.table.return_value
     select_chain = MagicMock()
-    eq_chain = MagicMock()
 
     # For client check
     select_chain.eq.return_value.execute.return_value = (
