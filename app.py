@@ -238,7 +238,7 @@ def list_progress(name):
         .order("id") \
         .execute()
     return jsonify(res.data)
-    
+
 
 @app.route("/clients/by-program/<program>", methods=["GET"])
 def clients_by_program(program):
