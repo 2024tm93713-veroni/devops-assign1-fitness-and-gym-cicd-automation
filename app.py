@@ -38,10 +38,27 @@ def get_supabase():
 
 
 def calculate_bmi(weight, height):
-    """Calculate BMI. Weight in kg, height in meters."""
-    if height <= 0:
+    """Calculate BMI. Weight in kg, height in meters.
+    Returns None if inputs are invalid or height <= 0.
+    """
+    # Type validation
+    if weight is None or height is None:
         return None
-    return round(weight / (height ** 2), 2)
+
+    if not isinstance(weight, (int, float)):
+        return None
+
+    if not isinstance(height, (int, float)):
+        return None
+
+    # Positive value validation
+    if weight <= 0 or height <= 0:
+        return None
+
+    try:
+        return round(weight / (height ** 2), 2)
+    except (ValueError, ZeroDivisionError):
+        return None
 
 
 def get_bmi_category(bmi):
