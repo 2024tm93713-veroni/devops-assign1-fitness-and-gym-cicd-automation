@@ -66,6 +66,12 @@ def create_gym_client():
     if program not in PROGRAMS_JSON:
         return jsonify({"error": "invalid program"}), 400
 
+    if not isinstance(weight, (int, float)):
+        return jsonify({"error": "weight must be number"}), 400
+
+    if age is not None and not isinstance(age, int):
+        return jsonify({"error": "age must be integer"}), 400
+
     calories = int(weight * PROGRAMS_JSON[program]["factor"])
 
     payload = {
