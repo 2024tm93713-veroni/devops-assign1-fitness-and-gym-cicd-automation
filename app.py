@@ -87,6 +87,43 @@ def list_programs():
     return jsonify(PROGRAMS_JSON)
 
 
+@app.route("/clients", methods=["GET"])
+def list_clients():
+    """List all clients with pagination."""
+    page = request.args.get("page", 1, type=int)
+    limit = request.args.get("limit", 10, type=int)
+
+    if page < 1 or limit < 1:
+        return jsonify({"error": "page and limit must be >= 1"}), 400
+
+    if limit > 100:
+        return jsonify({"error": "limit cannot exceed 100"}), 400
+
+    supabase = get_supabase()
+    offset = (page - 1) * limit
+
+    # Get total count
+    count_res = supabase.table("clients").select(
+        "*", count="exact"
+    ).execute()
+    total_count = len(count_res.data) if count_res.data else 0
+
+    # Get paginated data
+    res = supabase.table("clients").select(
+        "*"
+    ).range(offset, offset + limit - 1).execute()
+
+    total_pages = (total_count + limit - 1) // limit
+
+    return jsonify({
+        "page": page,
+        "limit": limit,
+        "total_count": total_count,
+        "total_pages": total_pages,
+        "data": res.data if res.data else []
+    }), 200
+
+
 @app.route("/clients", methods=["POST"])
 def create_gym_client():
     """Create new client."""
@@ -226,6 +263,58 @@ def clients_by_program(program):
         "count": len(res.data) if res.data else 0,
         "clients": res.data if res.data else []
     }), 200
+
+
+@app.route("/clients/<name>/measurement", methods=["POST"])
+def add_measurement(name):
+    """Add client measurement tracking."""
+    data = request.get_json(silent=True)
+    if data is None:
+        data = {}
+
+    # Validate measurement fields BEFORE checking client existence
+    waist = data.get("waist")
+    chest = data.get("chest")
+    arms = data.get("arms")
+    legs = data.get("legs")
+
+    # At least one measurement required
+    if all(v is None for v in [waist, chest, arms, legs]):
+        return jsonify({
+            "error": "At least one measurement required"
+        }), 400
+
+    # Validate measurements are numbers
+    for val in [waist, chest, arms, legs]:
+        if val is not None and not isinstance(val, (int, float)):
+            return jsonify({
+                "error": "All measurements must be numbers"
+            }), 400
+
+    # Check if client exists
+    supabase = get_supabase()
+    client_res = supabase.table("clients").select(
+        "*"
+    ).eq("name", name).execute()
+
+    if not client_res.data:
+        return jsonify({"error": "client not found"}), 404
+
+    measurement_date = datetime.utcnow().isoformat()
+    payload = {
+        "client_name": name,
+        "waist": waist,
+        "chest": chest,
+        "arms": arms,
+        "legs": legs,
+        "measurement_date": measurement_date
+    }
+
+    res = supabase.table("measurements").insert(payload).execute()
+    return jsonify({
+        "measurement": payload,
+        "supabase_result": res.model_dump()
+    }), 201
 
 
 @app.route("/clients/bmi-groups", methods=["GET"])
