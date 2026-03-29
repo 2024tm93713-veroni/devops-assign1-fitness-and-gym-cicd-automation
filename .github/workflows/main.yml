@@ -2,10 +2,10 @@ name: ACEest CI/CD → Local Jenkins
 
 on:
   push:
-    branches: [ main ]
-    tags: [ 'v*' ]
+    branches: [main]
+    tags: ["v*"]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
       - run: |
           pip install -r requirements.txt pytest flake8
           flake8 . && pytest
@@ -27,9 +27,9 @@ jobs:
     steps:
       - name: Trigger Local Jenkins
         env:
-          JENKINS_URL: ${{ secrets.JENKINS_URL }}        # http://192.168.1.100:8080
-          JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}    # your-api-token
-          VERSION: ${{ github.ref_name }}                # v1.0.0
+          JENKINS_URL: ${{ secrets.JENKINS_URL }}
+          JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
+          VERSION: ${{ github.ref_name }}
         run: |
           echo "Triggering Jenkins: $JENKINS_URL"
           curl -X POST \

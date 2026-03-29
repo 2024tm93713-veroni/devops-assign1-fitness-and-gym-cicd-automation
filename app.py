@@ -53,6 +53,8 @@ def list_programs():
 def create_gym_client():
     """Create new client."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid JSON body"}), 400
     name = data.get("name")
     age = data.get("age")
     weight = data.get("weight")
@@ -96,6 +98,8 @@ def get_client(name):
 def add_progress(name):
     """Add weekly progress."""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid JSON body"}), 400
     adherence = data.get("adherence")
     if adherence is None:
         return jsonify({"error": "adherence required"}), 400
@@ -130,6 +134,8 @@ def list_progress(name):
 def calculate_calories():
     """Calculate calories for program."""
     data = request.get_json(force=True)
+    if not data:
+        return jsonify({"error": "Invalid JSON body"}), 400
     weight = data.get("weight")
     code = data.get("program_code")
 
