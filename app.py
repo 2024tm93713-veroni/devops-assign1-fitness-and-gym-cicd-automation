@@ -87,6 +87,43 @@ def list_programs():
     return jsonify(PROGRAMS_JSON)
 
 
+@app.route("/clients", methods=["GET"])
+def list_clients():
+    """List all clients with pagination."""
+    page = request.args.get("page", 1, type=int)
+    limit = request.args.get("limit", 10, type=int)
+
+    if page < 1 or limit < 1:
+        return jsonify({"error": "page and limit must be >= 1"}), 400
+
+    if limit > 100:
+        return jsonify({"error": "limit cannot exceed 100"}), 400
+
+    supabase = get_supabase()
+    offset = (page - 1) * limit
+
+    # Get total count
+    count_res = supabase.table("clients").select(
+        "*", count="exact"
+    ).execute()
+    total_count = len(count_res.data) if count_res.data else 0
+
+    # Get paginated data
+    res = supabase.table("clients").select(
+        "*"
+    ).range(offset, offset + limit - 1).execute()
+
+    total_pages = (total_count + limit - 1) // limit
+
+    return jsonify({
+        "page": page,
+        "limit": limit,
+        "total_count": total_count,
+        "total_pages": total_pages,
+        "data": res.data if res.data else []
+    }), 200
+
+
 @app.route("/clients", methods=["POST"])
 def create_gym_client():
     """Create new client."""
