@@ -266,3 +266,71 @@ def test_delete_client_invalid_name():
     resp = client.delete("/clients/")
     # This will 404 because Flask won't match the route without a name
     assert resp.status_code == 404
+
+
+def test_clients_by_program_name(mock_supabase):
+    """Test get clients by program name."""
+    mock_response = MagicMock()
+    mock_response.data = [
+        {
+            "name": "John",
+            "age": 30,
+            "weight": 70,
+            "program": "Muscle Gain"
+        },
+        {
+            "name": "Bob",
+            "age": 35,
+            "weight": 75,
+            "program": "Muscle Gain"
+        }
+    ]
+
+    mock_table = mock_supabase.return_value.table.return_value
+    mock_table.select.return_value.eq.return_value.execute.return_value = (
+        mock_response
+    )
+
+    client = app.test_client()
+    resp = client.get("/clients/by-program/Muscle Gain")
+    assert resp.status_code == 200
+    data = resp.get_json()
+
+    assert data["program"] == "Muscle Gain"
+    assert data["count"] == 2
+    assert len(data["clients"]) == 2
+
+
+def test_clients_by_program_code(mock_supabase):
+    """Test get clients by program code."""
+    mock_response = MagicMock()
+    mock_response.data = [
+        {
+            "name": "Jane",
+            "age": 28,
+            "weight": 65,
+            "program": "Fat Loss"
+        }
+    ]
+
+    mock_table = mock_supabase.return_value.table.return_value
+    mock_table.select.return_value.eq.return_value.execute.return_value = (
+        mock_response
+    )
+
+    client = app.test_client()
+    resp = client.get("/clients/by-program/Fat Loss (FL)")
+    assert resp.status_code == 200
+    data = resp.get_json()
+
+    assert data["program"] == "Fat Loss"
+    assert data["count"] == 1
+
+
+def test_clients_by_program_invalid():
+    """Test get clients by invalid program."""
+    client = app.test_client()
+    resp = client.get("/clients/by-program/InvalidProgram")
+    assert resp.status_code == 400
+    data = resp.get_json()
+    assert data["error"] == "invalid program"

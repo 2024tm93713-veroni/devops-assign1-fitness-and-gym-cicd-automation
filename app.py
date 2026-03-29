@@ -201,6 +201,31 @@ def list_progress(name):
         .order("id") \
         .execute()
     return jsonify(res.data)
+    
+
+@app.route("/clients/by-program/<program>", methods=["GET"])
+def clients_by_program(program):
+    """Get all clients by program name or code."""
+    # Map program code to program name if needed
+    program_name = None
+    for code, details in PROGRAMS_JSON.items():
+        if details["name"] == program or code == program:
+            program_name = details["name"]
+            break
+
+    if not program_name:
+        return jsonify({"error": "invalid program"}), 400
+
+    supabase = get_supabase()
+    res = supabase.table("clients").select(
+        "*"
+    ).eq("program", program_name).execute()
+
+    return jsonify({
+        "program": program_name,
+        "count": len(res.data) if res.data else 0,
+        "clients": res.data if res.data else []
+    }), 200
 
 
 @app.route("/clients/bmi-groups", methods=["GET"])
