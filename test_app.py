@@ -200,3 +200,69 @@ def test_bmi_groups_with_clients(mock_supabase):
     # Check that Unknown category has Alice
     assert len(data["Unknown"]) == 1
     assert data["Unknown"][0]["name"] == "Alice"
+
+
+# Delete Client Tests
+@patch("app.get_supabase")
+def test_delete_client_success(mock_supabase):
+    """Test successful deletion of a client."""
+    mock_check_response = MagicMock()
+    mock_check_response.data = [
+        {
+            "id": 1,
+            "name": "John",
+            "age": 30,
+            "weight": 70,
+            "height": 1.80,
+            "bmi": 21.6,
+            "program": "Muscle Gain",
+            "calories": 2450
+        }
+    ]
+
+    mock_delete_response = MagicMock()
+    mock_delete_response.data = []
+
+    mock_table = mock_supabase.return_value.table.return_value
+    mock_table.select.return_value.eq.return_value.execute.return_value = (
+        mock_check_response
+    )
+    mock_table.delete.return_value.eq.return_value.execute.return_value = (
+        mock_delete_response
+    )
+
+    client = app.test_client()
+    resp = client.delete("/clients/John")
+    assert resp.status_code == 200
+    data = resp.get_json()
+
+    assert "message" in data
+    assert "John" in data["message"]
+    assert data["deleted_count"] == 1
+
+
+@patch("app.get_supabase")
+def test_delete_client_not_found(mock_supabase):
+    """Test deletion of non-existent client."""
+    mock_response = MagicMock()
+    mock_response.data = []
+
+    mock_table = mock_supabase.return_value.table.return_value
+    mock_table.select.return_value.eq.return_value.execute.return_value = (
+        mock_response
+    )
+
+    client = app.test_client()
+    resp = client.delete("/clients/NonExistent")
+    assert resp.status_code == 404
+    data = resp.get_json()
+
+    assert data["error"] == "client not found"
+
+
+def test_delete_client_invalid_name():
+    """Test deletion with invalid name parameter."""
+    client = app.test_client()
+    resp = client.delete("/clients/")
+    # This will 404 because Flask won't match the route without a name
+    assert resp.status_code == 404

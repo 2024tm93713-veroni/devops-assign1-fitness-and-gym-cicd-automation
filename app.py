@@ -145,6 +145,28 @@ def get_client(name):
     return jsonify(res.data[0])
 
 
+@app.route("/clients/<name>", methods=["DELETE"])
+def delete_client(name):
+    """Delete client by name."""
+    if not name or not isinstance(name, str):
+        return jsonify({"error": "name must be a valid string"}), 400
+
+    supabase = get_supabase()
+    # First check if client exists
+    check_res = supabase.table("clients").select("*").eq(
+        "name", name
+    ).execute()
+    if not check_res.data:
+        return jsonify({"error": "client not found"}), 404
+
+    # Delete the client
+    supabase.table("clients").delete().eq("name", name).execute()
+    return jsonify({
+        "message": f"Client '{name}' deleted successfully",
+        "deleted_count": len(check_res.data)
+    }), 200
+
+
 @app.route("/clients/<name>/progress", methods=["POST"])
 def add_progress(name):
     """Add weekly progress."""
