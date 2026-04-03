@@ -55,7 +55,7 @@ Workflow is defined in:
 - Triggered automatically via **GitHub Webhooks**
 - Executes:
   - Clean builds  
-  - Validation steps in an isolated environment  
+  - Validation steps in an isolated environment
 
 ---
 
@@ -63,3 +63,30 @@ Workflow is defined in:
 
 - Since Jenkins runs locally, **Ngrok** is used to expose it publicly  
 - Enables GitHub to trigger Jenkins via webhooks  
+
+---
+
+## Local Setup & Running Tests
+### Prerequisites
+
+Ensure the following are installed:
+
+Python 3.11+
+pip
+Docker
+
+### 1. Clone the repository
+### 2. Install dependencies
+pip install -r requirements.txt
+
+### 3. Run Tests Locally
+Execute:  pytest
+
+---
+
+## Run Tests Using Docker
+### 1. Build Docker Image
+docker build -t devops-assign1 .
+
+### 2. Run Tests Inside Container
+docker run devops-assign1 pytest
