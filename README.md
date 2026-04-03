@@ -52,7 +52,6 @@ Workflow is defined in:
 
 ## Jenkins Integration
 
-- Jenkins is used for **secondary CI verification**
 - Triggered automatically via **GitHub Webhooks**
 - Executes:
   - Clean builds  
