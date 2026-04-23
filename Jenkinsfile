@@ -100,6 +100,12 @@ pipeline {
             }
         }
 
+        stage('Test K8s Connection') {
+            steps {
+                sh 'kubectl get pods'
+            }
+        }
+
         stage('Deploy to Kubernetes (Rolling Update)') {
             steps {
                 sh '''
