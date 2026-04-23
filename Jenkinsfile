@@ -100,21 +100,6 @@ pipeline {
             }
         }
 
-        stage('Test K8s Connection') {
-            steps {
-                sh 'kubectl get pods'
-            }
-        }
-
-        stage('Deploy to Kubernetes (Rolling Update)') {
-            steps {
-                sh '''
-                kubectl set image deployment/aceest-app-2024tm93713 \
-                aceest-container=$DOCKER_IMAGE:$TAG || echo "K8s deployment not found, skipping"
-                '''
-            }
-        }
-
         stage('SonarQube Analysis') {
             steps {
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
