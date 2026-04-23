@@ -21,9 +21,9 @@ pipeline {
 
         stage('Python Tests') {
             steps {
-                sh '''
+                bat '''
                 python -m venv venv
-                . venv/bin/activate
+                call venv\\Scripts\\activate
                 pip install -r requirements.txt pytest
                 pytest
                 '''
@@ -32,7 +32,7 @@ pipeline {
 
         stage('Select Version') {
             steps {
-                sh '''
+                bat '''
                 echo "Using version: $VERSION"
 
                 if [ "$VERSION" = "v1.0.0" ]; then
@@ -48,7 +48,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh '''
+                bat '''
                 docker build -t $DOCKER_IMAGE:$TAG .
                 '''
             }
@@ -56,8 +56,8 @@ pipeline {
 
         stage('Test Inside Container') {
             steps {
-                sh '''
-                docker run --rm $DOCKER_IMAGE:$TAG pytest || exit 1
+                bat '''
+                docker run --del $DOCKER_IMAGE:$TAG pytest || exit 1
                 echo "✓ Container tests passed"
                 '''
             }
@@ -65,11 +65,11 @@ pipeline {
 
         stage('Docker Health Check') {
             steps {
-                sh '''
+                bat '''
                 docker run -d --name aceest-test -p 5000:5000 $DOCKER_IMAGE:$TAG
-                sleep 10
+                timeout /t 10
                 curl -f http://localhost:5000/ || (echo "Health check failed" && exit 1)
-                docker rm -f aceest-test
+                docker del -f aceest-test
                 echo "✓ Health check passed"
                 '''
             }
@@ -82,7 +82,7 @@ pipeline {
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
-                    sh '''
+                    bat '''
                     echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
                     docker push $DOCKER_IMAGE:$TAG
                     '''
@@ -92,8 +92,8 @@ pipeline {
 
         stage('Deploy (Local Docker)') {
             steps {
-                sh '''
-                docker rm -f $CONTAINER_NAME || true
+                bat '''
+                docker del -f $CONTAINER_NAME || true
                 docker run -d --name $CONTAINER_NAME -p 8080:5000 $DOCKER_IMAGE:$TAG
                 echo "✓ Deployed $TAG locally at http://localhost:8080"
                 '''
@@ -103,7 +103,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                    sh '''
+                    bat '''
                     sonar-scanner \
                     -Dsonar.projectKey=aceest \
                     -Dsonar.sources=. \
@@ -130,13 +130,13 @@ pipeline {
         failure {
             echo "❌ Build failed. Consider rollback"
 
-            sh '''
+            bat '''
             echo "Rolling back to previous container (if exists)..."
             docker ps -a
             '''
         }
         always {
-            sh 'docker system prune -f'
+            bat 'docker system prune -f'
         }
     }
 }
