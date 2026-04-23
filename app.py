@@ -381,5 +381,22 @@ def calculate_calories():
     }), 200
 
 
+@app.route("/clients/search", methods=["GET"])
+def search_clients():
+    """Search clients by name (partial match)."""
+    query = request.args.get("q")
+
+    if not query:
+        return jsonify({"error": "query parameter 'q' required"}), 400
+
+    supabase = get_supabase()
+    res = supabase.table("clients") \
+        .select("*") \
+        .ilike("name", f"%{query}%") \
+        .execute()
+
+    return jsonify(res.data), 200
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
