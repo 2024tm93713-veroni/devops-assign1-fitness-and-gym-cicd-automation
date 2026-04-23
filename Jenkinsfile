@@ -30,18 +30,10 @@ pipeline {
             }
         }
 
-        stage('Select Version') {
+        stage('Checkout Version') {
             steps {
                 bat '''
-                echo "Using version: $VERSION"
-
-                if [ "$VERSION" = "v1.0.0" ]; then
-                    cp app_v1.py app.py
-                elif [ "$VERSION" = "v2.0.0" ]; then
-                    cp app_v2.py app.py
-                else
-                    cp app_v3.py app.py
-                fi
+                git checkout %VERSION%
                 '''
             }
         }
