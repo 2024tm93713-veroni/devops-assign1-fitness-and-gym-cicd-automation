@@ -10,30 +10,24 @@ pipeline {
         TAG = "${params.VERSION}"
         CONTAINER_NAME = "aceest-prod"
     }
+    
 
     stages {
-
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Python Tests') {
-            steps {
-                bat '''
-                python -m venv venv
-                call venv\\Scripts\\activate
-                pip install -r requirements.txt pytest
-                pytest
-                '''
-            }
-        }
 
         stage('Checkout Version') {
             steps {
                 bat '''
-                git checkout %VERSION%
+                git fetch --all --tags
+                git checkout tags/%VERSION%
+                '''
+            }
+        }
+
+        stage('Python Tests (Docker)') {
+            steps {
+                bat '''
+                docker build -t test-image .
+                docker run --rm test-image pytest
                 '''
             }
         }
@@ -41,7 +35,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 bat '''
-                docker build -t $DOCKER_IMAGE:$TAG .
+                docker build -t %DOCKER_IMAGE%:%TAG% .
                 '''
             }
         }
@@ -49,7 +43,7 @@ pipeline {
         stage('Test Inside Container') {
             steps {
                 bat '''
-                docker run --del $DOCKER_IMAGE:$TAG pytest || exit 1
+                docker run --rm %DOCKER_IMAGE%:%TAG% pytest
                 echo "✓ Container tests passed"
                 '''
             }
@@ -58,10 +52,11 @@ pipeline {
         stage('Docker Health Check') {
             steps {
                 bat '''
-                docker run -d --name aceest-test -p 5000:5000 $DOCKER_IMAGE:$TAG
+                docker run -d --name aceest-test -p 5000:5000 %DOCKER_IMAGE%:%TAG%
                 timeout /t 10
-                curl -f http://localhost:5000/ || (echo "Health check failed" && exit 1)
-                docker del -f aceest-test
+                curl -f http://localhost:5000/
+                IF %ERRORLEVEL% NEQ 0 exit /b 1
+                docker rm -f aceest-test
                 echo "✓ Health check passed"
                 '''
             }
@@ -75,8 +70,8 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
                     bat '''
-                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                    docker push $DOCKER_IMAGE:$TAG
+                    docker login -u %DOCKER_USER% -p %DOCKER_PASS%
+                    docker push %DOCKER_IMAGE%:%TAG%
                     '''
                 }
             }
@@ -85,9 +80,9 @@ pipeline {
         stage('Deploy (Local Docker)') {
             steps {
                 bat '''
-                docker del -f $CONTAINER_NAME || true
-                docker run -d --name $CONTAINER_NAME -p 8080:5000 $DOCKER_IMAGE:$TAG
-                echo "✓ Deployed $TAG locally at http://localhost:8080"
+                docker rm -f %CONTAINER_NAME% 2>nul
+                docker run -d --name %CONTAINER_NAME% -p 8080:5000 %DOCKER_IMAGE%:%TAG%
+                echo "✓ Deployed %TAG% locally at http://localhost:8080"
                 '''
             }
         }
@@ -96,11 +91,11 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                     bat '''
-                    sonar-scanner \
-                    -Dsonar.projectKey=aceest \
-                    -Dsonar.sources=. \
-                    -Dsonar.host.url=http://localhost:9000 \
-                    -Dsonar.login=$SONAR_TOKEN
+                    sonar-scanner ^
+                    -Dsonar.projectKey=aceest ^
+                    -Dsonar.sources=. ^
+                    -Dsonar.host.url=http://localhost:9000 ^
+                    -Dsonar.login=%SONAR_TOKEN%
                     '''
                 }
             }
