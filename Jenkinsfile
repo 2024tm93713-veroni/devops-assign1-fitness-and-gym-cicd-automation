@@ -89,8 +89,8 @@ pipeline {
             steps {
                 bat '''
                 docker rm -f %CONTAINER_NAME% 2>nul
-                docker run -d --name %CONTAINER_NAME% -p 8080:5000 %DOCKER_IMAGE%:%TAG%
-                echo "✓ Deployed %TAG% locally at http://localhost:8080"
+                docker run -d --name %CONTAINER_NAME% -p 8081:5000 %DOCKER_IMAGE%:%TAG% || exit /b 1
+                echo "✓ Deployed %TAG% locally at http://localhost:8081"
                 '''
             }
         }
