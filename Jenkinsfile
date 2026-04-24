@@ -49,33 +49,33 @@ pipeline {
             }
         }
 
-        stage('Docker Health Check') {
-            steps {
-                bat '''
+    stage('Docker Health Check') {
+        steps {
+            bat '''
             echo Cleaning old container...
             docker rm -f aceest-test 2>nul
 
             echo Starting new container...
             docker run -d --name aceest-test -p 5000:5000 %DOCKER_IMAGE%:%TAG% || exit /b 1
 
-                echo Waiting for app to start...
-                ping 127.0.0.1 -n 15 > nul
+            echo Waiting for app to start...
+            ping 127.0.0.1 -n 15 > nul
 
             echo Checking logs...
             docker logs aceest-test
 
-                curl -f http://localhost:5000/ || (
-                    echo "Health check failed"
-                    docker logs aceest-test
-                    docker rm -f aceest-test
-                    exit /b 1
-                )
-
+            curl -f http://localhost:5000/ || (
+                echo "Health check failed"
+                docker logs aceest-test
                 docker rm -f aceest-test
-                echo "✓ Health check passed"
-                '''
-            }
+                exit /b 1
+            )
+
+            docker rm -f aceest-test
+            echo "✓ Health check passed"
+            '''
         }
+    }
 
         stage('Push to Docker Hub') {
             steps {
@@ -104,15 +104,14 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                script {
-                    def scannerHome = tool 'SonarScanner'
-                    withSonarQubeEnv('SonarQube') {
-                        bat """
-                        ${scannerHome}\\bin\\sonar-scanner ^
-                        -Dsonar.projectKey=aceest ^
-                        -Dsonar.sources=. ^
-                        """
-                    }
+                withSonarQubeEnv('sonar') {
+                    bat '''
+                    sonar-scanner ^
+                    -Dsonar.projectKey=aceest ^
+                    -Dsonar.sources=. ^
+                    -Dsonar.host.url=http://localhost:9000 ^
+                    -Dsonar.login=%SONAR_AUTH_TOKEN%
+                    '''
                 }
             }
         }
