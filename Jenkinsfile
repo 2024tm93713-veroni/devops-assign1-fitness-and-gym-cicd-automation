@@ -65,20 +65,33 @@ pipeline {
             %DOCKER_IMAGE%:%TAG% || exit /b 1
 
             echo Waiting for app to start...
-            ping 127.0.0.1 -n 15 > nul
+            timeout /t 5 > nul
+            
+            set /a retries=10
 
-            echo Checking logs...
-            docker logs aceest-test
+            :retry
+            curl -f http://127.0.0.1:5000/ && goto success
 
-            curl -f http://localhost:5000/ || (
+            echo retrying...
+            timeout /t 3 > nul
+            set /a retries-=1
+
+            if %retries% LEQ 0 (
                 echo "Health check failed"
                 docker logs aceest-test
                 docker rm -f aceest-test
                 exit /b 1
             )
 
-            docker rm -f aceest-test
+            goto retry
+
+            :success
             echo "✓ Health check passed"
+
+            echo Checking logs...
+            docker logs aceest-test
+
+            docker rm -f aceest-test
             '''
         }
     }
@@ -118,6 +131,7 @@ pipeline {
                     call "${scannerHome}\\bin\\sonar-scanner.bat" ^
                     -Dsonar.projectKey=aceest ^
                     -Dsonar.sources=. ^
+                    -Dsonar.host.url=%SONAR_HOST_URL% ^
                     -Dsonar.login=%SONAR_AUTH_TOKEN%
                     """
                 }

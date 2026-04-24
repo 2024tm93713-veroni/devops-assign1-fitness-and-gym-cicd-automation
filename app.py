@@ -31,10 +31,13 @@ PROGRAMS_JSON = {
 
 
 def get_supabase():
-    """Lazy init Supabase client."""
-    if not SUPABASE_URL or not SUPABASE_KEY:
+    try:
+        if not SUPABASE_URL or not SUPABASE_KEY:
+            return None
+        return create_client(SUPABASE_URL, SUPABASE_KEY)
+    except Exception as e:
+        print("Supabase init failed:", str(e))
         return None
-    return create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 def calculate_bmi(weight, height):
@@ -104,6 +107,8 @@ def list_clients():
         return jsonify({"error": "limit cannot exceed 100"}), 400
 
     supabase = get_supabase()
+    if not supabase:
+        return jsonify({"error": "Database unavailable"}), 500
     offset = (page - 1) * limit
 
     # Get total count
@@ -169,6 +174,8 @@ def create_gym_client():
     }
 
     supabase = get_supabase()
+    if not supabase:
+        return jsonify({"error": "Database unavailable"}), 500
     res = supabase.table("clients").insert(payload).execute()
     return jsonify({
         "client": payload,
@@ -180,6 +187,8 @@ def create_gym_client():
 def get_client(name):
     """Get client by name."""
     supabase = get_supabase()
+    if not supabase:
+        return jsonify({"error": "Database unavailable"}), 500
     res = supabase.table("clients").select("*").eq("name", name).execute()
     if not res.data:
         return jsonify({"error": "not found"}), 404
@@ -193,6 +202,8 @@ def delete_client(name):
         return jsonify({"error": "name must be a valid string"}), 400
 
     supabase = get_supabase()
+    if not supabase:
+        return jsonify({"error": "Database unavailable"}), 500
     # First check if client exists
     check_res = supabase.table("clients").select("*").eq(
         "name", name
@@ -225,6 +236,8 @@ def add_progress(name):
         "adherence": adherence
     }
     supabase = get_supabase()
+    if not supabase:
+        return jsonify({"error": "Database unavailable"}), 500
     res = supabase.table("progress").insert(payload).execute()
     return jsonify({
         "progress": payload,
@@ -236,6 +249,8 @@ def add_progress(name):
 def list_progress(name):
     """List client progress."""
     supabase = get_supabase()
+    if not supabase:
+        return jsonify({"error": "Database unavailable"}), 500
     res = supabase.table("progress") \
         .select("*") \
         .eq("client_name", name) \
@@ -258,6 +273,8 @@ def clients_by_program(program):
         return jsonify({"error": "invalid program"}), 400
 
     supabase = get_supabase()
+    if not supabase:
+        return jsonify({"error": "Database unavailable"}), 500
     res = supabase.table("clients").select(
         "*"
     ).eq("program", program_name).execute()
@@ -297,6 +314,8 @@ def add_measurement(name):
 
     # Check if client exists
     supabase = get_supabase()
+    if not supabase:
+        return jsonify({"error": "Database unavailable"}), 500
     client_res = supabase.table("clients").select(
         "*"
     ).eq("name", name).execute()
@@ -325,6 +344,8 @@ def add_measurement(name):
 def get_bmi_groups():
     """Group all clients by BMI category."""
     supabase = get_supabase()
+    if not supabase:
+        return jsonify({"error": "Database unavailable"}), 500
     res = supabase.table("clients").select("*").execute()
 
     if not res.data:
@@ -394,6 +415,8 @@ def search_clients():
         return jsonify({"error": "query parameter 'q' required"}), 400
 
     supabase = get_supabase()
+    if not supabase:
+        return jsonify({"error": "Database unavailable"}), 500
     res = supabase.table("clients") \
         .select("*") \
         .ilike("name", f"%{query}%") \
