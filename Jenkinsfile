@@ -26,7 +26,7 @@ pipeline {
         stage('Python Tests (Docker)') {
             steps {
                 bat '''
-                docker build -t test-image .
+                docker build --no-cache -t test-image .
                 docker run --rm test-image python -m pytest
                 '''
             }
