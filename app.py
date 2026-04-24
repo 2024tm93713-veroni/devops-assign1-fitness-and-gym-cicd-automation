@@ -33,7 +33,7 @@ PROGRAMS_JSON = {
 def get_supabase():
     """Lazy init Supabase client."""
     if not SUPABASE_URL or not SUPABASE_KEY:
-        raise ValueError("SUPABASE_URL and SUPABASE_KEY required")
+        return None
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
@@ -78,7 +78,7 @@ def get_bmi_category(bmi):
 @app.route("/")
 def health():
     """Health check endpoint."""
-    return jsonify({"status": "ok", "service": "ACEest API v1"})
+    return jsonify({"status": "ok", "service": "ACEest API v1", "supabase": bool(SUPABASE_URL and SUPABASE_KEY)})
 
 
 @app.route("/programs", methods=["GET"])

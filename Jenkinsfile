@@ -9,6 +9,8 @@ pipeline {
         DOCKER_IMAGE = "2024tm93713/aceest-app-2024tm93713"
         TAG = "${params.VERSION}"
         CONTAINER_NAME = "aceest-prod"
+        SUPABASE_URL = credentials('SUPABASE_URL')
+        SUPABASE_KEY = credentials('SUPABASE_KEY')
     }
     
 
@@ -56,7 +58,11 @@ pipeline {
             docker rm -f aceest-test 2>nul
 
             echo Starting new container...
-            docker run -d --name aceest-test -p 5000:5000 %DOCKER_IMAGE%:%TAG% || exit /b 1
+            docker run -d --name aceest-test ^
+            -p 5000:5000 ^
+            -e SUPABASE_URL=%SUPABASE_URL% ^
+            -e SUPABASE_KEY=%SUPABASE_KEY% ^
+            %DOCKER_IMAGE%:%TAG% || exit /b 1
 
             echo Waiting for app to start...
             ping 127.0.0.1 -n 15 > nul
