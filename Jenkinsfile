@@ -102,22 +102,22 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('sonar') {
-                    script {
-                        def scannerHome = tool 'sonar-scanner'
-                        bat """
-                        ${scannerHome}\\bin\\sonar-scanner ^
-                        -Dsonar.projectKey=aceest ^
-                        -Dsonar.sources=. ^
-                        -Dsonar.host.url=http://localhost:9000 ^
-                        -Dsonar.login=%SONAR_AUTH_TOKEN%
-                        """
-                    }
+    stage('SonarQube Analysis') {
+        steps {
+            withSonarQubeEnv('sonar') {
+                script {
+                    def scannerHome = tool 'sonar-scanner'
+
+                    bat """
+                    call "${scannerHome}\\bin\\sonar-scanner.bat" ^
+                    -Dsonar.projectKey=aceest ^
+                    -Dsonar.sources=. ^
+                    -Dsonar.login=%SONAR_AUTH_TOKEN%
+                    """
                 }
             }
         }
+    }
 
         stage('Quality Gate') {
             steps {
