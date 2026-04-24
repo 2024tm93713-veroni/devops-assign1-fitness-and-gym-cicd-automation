@@ -27,7 +27,7 @@ pipeline {
             steps {
                 bat '''
                 docker build -t test-image .
-                docker run --rm test-image pytest
+                docker run --rm test-image python -m pytest
                 '''
             }
         }
@@ -43,7 +43,7 @@ pipeline {
         stage('Test Inside Container') {
             steps {
                 bat '''
-                docker run --rm %DOCKER_IMAGE%:%TAG% pytest
+                docker run --rm %DOCKER_IMAGE%:%TAG% python -m pytest
                 echo "✓ Container tests passed"
                 '''
             }
