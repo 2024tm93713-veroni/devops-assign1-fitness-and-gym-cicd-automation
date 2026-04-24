@@ -52,10 +52,17 @@ pipeline {
         stage('Docker Health Check') {
             steps {
                 bat '''
-                docker run -d --name aceest-test -p 5000:5000 %DOCKER_IMAGE%:%TAG%
+            echo Cleaning old container...
+            docker rm -f aceest-test 2>nul
+
+            echo Starting new container...
+            docker run -d --name aceest-test -p 5000:5000 %DOCKER_IMAGE%:%TAG% || exit /b 1
 
                 echo Waiting for app to start...
                 ping 127.0.0.1 -n 15 > nul
+
+            echo Checking logs...
+            docker logs aceest-test
 
                 curl -f http://localhost:5000/ || (
                     echo "Health check failed"
