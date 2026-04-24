@@ -53,9 +53,17 @@ pipeline {
             steps {
                 bat '''
                 docker run -d --name aceest-test -p 5000:5000 %DOCKER_IMAGE%:%TAG%
-                timeout /t 10
-                curl -f http://localhost:5000/
-                IF %ERRORLEVEL% NEQ 0 exit /b 1
+
+                echo Waiting for app to start...
+                ping 127.0.0.1 -n 15 > nul
+
+                curl -f http://localhost:5000/ || (
+                    echo "Health check failed"
+                    docker logs aceest-test
+                    docker rm -f aceest-test
+                    exit /b 1
+                )
+
                 docker rm -f aceest-test
                 echo "✓ Health check passed"
                 '''
