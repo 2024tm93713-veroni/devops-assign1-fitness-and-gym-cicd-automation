@@ -78,7 +78,11 @@ def get_bmi_category(bmi):
 @app.route("/")
 def health():
     """Health check endpoint."""
-    return jsonify({"status": "ok", "service": "ACEest API v1", "supabase": bool(SUPABASE_URL and SUPABASE_KEY)})
+    return jsonify({
+        "status": "ok",
+        "service": "ACEest API v1",
+        "supabase": bool(SUPABASE_URL and SUPABASE_KEY)
+    })
 
 
 @app.route("/programs", methods=["GET"])
