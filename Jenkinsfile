@@ -66,7 +66,7 @@ pipeline {
 
             echo Waiting for app to start...
             timeout /t 5 > nul
-            
+
             set /a retries=10
 
             :retry
@@ -141,7 +141,7 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 2, unit: 'MINUTES') {
+                timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
