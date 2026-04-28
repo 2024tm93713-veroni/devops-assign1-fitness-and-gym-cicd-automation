@@ -90,3 +90,30 @@ docker build -t devops-assign1 .
 
 ### 2. Run Tests Inside Container
 docker run devops-assign1 pytest
+
+### Push Image
+```
+docker login -u %DOCKER_USER% -p %DOCKER_PASS%
+docker push DOCKER_IMAGE:TAG
+```
+
+### SonarQube setup in Jenkins
+1. Install SonarQube Scanner
+2. Save the SonarQube token in Jenkins
+3. Add SonarQube server
+4. The SonarQube Analysis stage of the pipeline will analyse your code
+
+## Container orchestration
+
+1. Install minikube
+2. Run this command to start minikube
+```minikube start```
+
+### Deployennt stratergies
+1. Each stratergy is created inside k8s folder witha respective folder of it's own
+2. A base deployment and service file also exists
+3. Update the path according to the stratergy
+```
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+```
