@@ -109,8 +109,8 @@ docker push DOCKER_IMAGE:TAG
 2. Run this command to start minikube
 ```minikube start```
 
-### Deployennt stratergies
-1. Each stratergy is created inside k8s folder witha respective folder of it's own
+### Deployment stratergies
+1. Each stratergy is created inside k8s folder with a respective folder of it's own
 2. A base deployment and service file also exists
 3. Update the path according to the stratergy
 ```
